@@ -1,8 +1,10 @@
+-include srcs/.env
+export
+
 DOCKER = docker compose -f srcs/docker-compose.yml
-DIR = ./data
 
 all:
-	mkdir -p $(DIR)/mariadb $(DIR)/wordpress
+	mkdir -p $(DATA_DIR)/mariadb $(DATA_DIR)/wordpress
 	$(DOCKER) up --build -d
 
 clean:
@@ -10,14 +12,25 @@ clean:
 
 fclean:
 	$(DOCKER) down --rmi all --volumes
+	docker volume prune -f
 	docker container prune -f
 	docker image prune -af
-	rm -rf $(DIR)
+	sudo rm -rf $(DATA_DIR)
+	sudo rm -rf ./srcs/$(DATA_DIR)
+
+fullclean: fclean
+	docker system prune -af --volumes
+	docker builder prune -af
 
 re: fclean all
 
-check:
-	docker compose -f srcs/docker-compose.yml ps
-	docker compose -f srcs/docker-compose.yml logs -f
+start:
+	$(DOCKER) start
 
-.PHONY: all clean fclean re check
+stop:
+	$(DOCKER) stop
+
+logs:
+	$(DOCKER) logs -f
+
+.PHONY: all clean fclean re start stop logs fullclean

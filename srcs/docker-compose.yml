@@ -1,6 +1,7 @@
 services:
   mariadb:
     build: requirements/mariadb
+    image: mariadb
     container_name: mariadb
     env_file: .env
     networks:
@@ -14,6 +15,7 @@ services:
   
   wordpress:
     build: requirements/wordpress
+    image: wordpress
     container_name: wordpress
     env_file: .env
     networks:
@@ -29,6 +31,7 @@ services:
   
   nginx:
     build: requirements/nginx
+    image: nginx
     container_name: nginx
     env_file: .env
     networks:
@@ -51,14 +54,14 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: /home/jla-chon/data/mariadb
+      device: ${DATA_DIR}/mariadb
   
   wordpress:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/jla-chon/data/wordpress
+      device: ${DATA_DIR}/wordpress
 
 secrets:
   db_password:

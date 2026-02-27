@@ -8,7 +8,7 @@ COPY conf/99-customwp.cnf /etc/mysql/mariadb.conf.d/99-customwp.cnf
 
 COPY tools/entrypoint.sh /entrypoint.sh
 
-RUN chmod +x entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 3306
 

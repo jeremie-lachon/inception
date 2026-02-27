@@ -9,8 +9,6 @@ if [ ! -d "/var/lib/mysql/${MYSQL_DATABASE}" ]; then
 
 	echo "First run — initializing database..."
 
-
-	# Run initialization SQL via bootstrap mode
 	mysqld --user=mysql --bootstrap --skip-networking <<HERE
 FLUSH PRIVILEGES;
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
