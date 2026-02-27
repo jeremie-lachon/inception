@@ -1,0 +1,14 @@
+[mysqld]
+# not root
+user = mysql
+# for pid
+pid-file = /run/mysqld/mysqld.pid
+socket = /run/mysqld/mysqld.sock
+# wp not localhost
+bind-address = 0.0.0.0
+datadir = /var/lib/mysql
+# wp uses utf8
+character-set-server = utf8mb4
+collation-server = utf8mb4_general_ci
+# faster checking
+skip-name-resolve
