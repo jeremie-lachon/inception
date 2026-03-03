@@ -4,40 +4,46 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sys/select.h>
-#include <sys/types.h> 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <strings.h>
+#include <sys/select.h>
 
-int id_client = 0;
-int fd_max = 0;
-int cl_fd[4096] = {-1};
-int cl_id_fd[4096] = {-1};
-char *extract_id[4096] = {0};
+int sockfd = -1;
+int maxfd = 0;
+int maxid = 0;
+int cli_fd[4096] = {-1};
+int cli_fd_id[4096] = {-1};
+char *cli_msg[4096] = {0};
 
-void erro_msg(char *msg)
+void	exitclean()
 {
-	write(2, msg, strlen(msg));
+	if (sockfd != -1)
+		close(sockfd);
+	write(2, "Fatal error\n", strlen("Fatal error\n"));
 	exit(1);
 }
 
-void maxi()
-{ 
-	for (int i = 0; i < id_client; i++)
+void writeToAll(int fd, char *msg)
+{
+	for (int i = 0; i < maxid; i++)
 	{
-		if (cl_fd[i] > fd_max)
-			fd_max = cl_fd[i];
+		if (cli_fd[i] != -1 && cli_fd[i] != fd)
+		{
+			write(cli_fd[i], msg, strlen(msg));
+		}
 	}
 }
 
-void send_all(char *msg, int fd)
-{ 
-	for (int i = 0; i < id_client; i++)
+void setmax()
+{
+	for (int i = 0; i < maxid; i++)
 	{
-		if (cl_fd[i] != fd && cl_fd[i] != -1)
-			send(cl_fd[i], msg, strlen(msg), 0);
-	}
+		if (cli_fd[i] > maxfd)
+		{
+			maxfd = cli_fd[i];
+		}
+	}	
 }
 
 int extract_message(char **buf, char **msg)
@@ -88,97 +94,98 @@ char *str_join(char *buf, char *add)
 }
 
 
-int main(int argc, char **argv) {
+int main(int ac, char **av) {
 
-	if (argc != 2)
-		erro_msg("Wrong number of arguments\n");
-
-	int sockfd, connfd;
-	socklen_t len;
+	if (ac != 2)
+	{
+		write(2, "Wrong number of arguments\n", strlen("Wrong number of arguments\n"));
+		exit(1);
+	}
+	int sockfd, connfd, len;
 	struct sockaddr_in servaddr, cli; 
 
+	// socket create and verification 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0); 
 	if (sockfd == -1)
-		erro_msg("Fatal error\n");
-
+		exitclean();
 	bzero(&servaddr, sizeof(servaddr)); 
 
-	fd_set readfds, writefds, cpyfds;
-
- 	FD_ZERO(&cpyfds);
-	FD_SET(sockfd, &cpyfds);
-
-	fd_max = sockfd;
-
+	// assign IP, PORT 
 	servaddr.sin_family = AF_INET; 
-	servaddr.sin_addr.s_addr = htonl(2130706433);
-	servaddr.sin_port = htons(atoi(argv[1])); 
-
+	servaddr.sin_addr.s_addr = 16777343; //127.0.0.1
+	int lul = atoi(av[1]);
+	int a = lul >> 8;
+	int b = lul & 0xFF;
+	lul = b << 8 | a;
+	servaddr.sin_port = lul; 
+  
+	// Binding newly created socket to given IP and verification 
 	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0)
-		erro_msg("Fatal error\n");
+		exitclean();
 	if (listen(sockfd, 10) != 0)
-		erro_msg("Fatal error\n");
-
+		exitclean();
+	
+	fd_set setall, setwrite, setread;
+	FD_ZERO(&setall);
+	FD_SET(sockfd, &setall);
+	maxfd = sockfd;
+	char buf[50];
 	while (1)
 	{
-		readfds=writefds=cpyfds;
-		if (select(fd_max + 1, &readfds, &writefds,0 , 0) < 0) {
+		setwrite = setread = setall;
+		if (select(maxfd + 1, &setread, &setwrite, 0, 0) <= 0)
+		{
+			;
 		}
 		else
 		{
-			for (int fd = sockfd; fd <= fd_max; fd++)
+			for (int i = 0; i <= maxfd; i++)
 			{
-				if (FD_ISSET(fd, &readfds))
+				if (FD_ISSET(i, &setread))
 				{
-					if (fd == sockfd)
+					if (i == sockfd)
 					{
 						connfd = accept(sockfd, 0, 0);
-						if (connfd < 0) {
-						} 
-						else
+						if (connfd != -1)
 						{
-							int id = id_client++;
-							cl_id_fd[connfd] = id;
-							cl_fd[id] = connfd;
-							char msg[50];
-							bzero(&msg, sizeof(msg));
-							sprintf(msg, "server: client %d just arrived\n", id);
-							send_all(msg, connfd);
-							FD_SET(connfd, &cpyfds);
-							maxi();
-							break ;
+							int id = maxid++;
+							cli_fd[id] = connfd;
+							cli_fd_id[connfd] = id;
+							bzero(&buf, sizeof(buf));
+							sprintf(buf, "server: client %d just arrived\n", id);
+							writeToAll(connfd, buf);
+							FD_SET(connfd, &setall);
+							setmax();
+							break;
 						}
 					}
 					else
 					{
-						int id = cl_id_fd[fd];
-						char buffer[4096];
-						bzero(&buffer, sizeof(buffer));
-						int readed = read(fd, &buffer, 4096);
-						buffer[readed] = '\0';
-						if (readed <= 0)
+						int cid = cli_fd_id[i];
+						char full[4096];
+						bzero(&full, sizeof(full));
+						if (read(i, full, 4095) <= 0)
 						{
-							char msg[50];
-							bzero(&msg, sizeof(msg));
-							sprintf(msg, "server: client %d just left\n", id);
-							send_all(msg, fd);
-							FD_CLR(fd, &cpyfds);
-							close(fd);
-							cl_fd[id] = -1;
-							free(extract_id[id]);
+							bzero(&buf, sizeof(buf));
+							sprintf(buf, "server: client %d just left\n", cid);
+							writeToAll(i, buf);
+							close(i);
+							FD_CLR(i, &setall);
+							free(cli_msg[cid]);
+							cli_fd[cid] = -1;
 						}
 						else
 						{
-							char *msg_to_send = 0;
-							extract_id[id] = str_join(extract_id[id], buffer);
-							while (extract_message(&extract_id[id], &msg_to_send))
+							char *msg = 0;
+							cli_msg[cid] = str_join(cli_msg[cid], full);
+							while (extract_message(&cli_msg[cid], &msg))
 							{
-								char msg[4096];
-								bzero(&msg, sizeof(msg));
-								sprintf(msg, "client %d: ", id);
-								send_all(msg, fd);
-								send_all(msg_to_send, fd);
-								free(msg_to_send);
+								bzero(&buf, sizeof(buf));
+								sprintf(buf, "client %d: ", cid);
+								writeToAll(i, buf);
+								writeToAll(i, msg);
+								free(msg);
+								msg = 0;
 							}
 						}
 					}
@@ -186,4 +193,5 @@ int main(int argc, char **argv) {
 			}
 		}
 	}
+	return (0);
 }
