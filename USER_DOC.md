@@ -13,11 +13,11 @@
 - `make fullclean` does everything `fclean` does and also clears the Docker build cache
 
 ## Accessing the Website
-- Navigate to [jla-chon.42.fr](https://jla-chon.42.fr)
+- Navigate to [jla-chon.local](https://jla-chon.local)
 - The site uses a self-signed certificate — accept the browser security warning to proceed
 
 ## Accessing the Administration Panel
-- Navigate to [jla-chon.42.fr/wp-admin](https://jla-chon.42.fr/wp-admin)
+- Navigate to [jla-chon.local/wp-admin](https://jla-chon.local/wp-admin)
 - Log in with the admin credentials from `secrets/credentials.txt`
 
 ## Credentials

@@ -3,7 +3,7 @@
 ## Prerequisites
 - Docker and Docker Compose v2 must be installed
 - `make` must be available
-- Add `jla-chon.42.fr` to `/etc/hosts` pointing to the host machine's IP
+- Add `jla-chon.local` to `/etc/hosts` pointing to the host machine's IP
 
 ## Setup from Scratch
 

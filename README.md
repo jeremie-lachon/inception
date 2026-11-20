@@ -1,5 +1,3 @@
-*This project has been created as part of the 42 curriculum by jla-chon.*
-
 # Inception
 
 ## Description
@@ -11,7 +9,7 @@
 - Create `secrets/` at the root with `db_password.txt`, `db_root_password.txt`, and `credentials.txt`
 - Create `srcs/.env` with the required environment variables (see DEV_DOC.md for the full list)
 - Run `make` to build and start the stack
-- Navigate to `https://jla-chon.42.fr` in your browser
+- Navigate to `https://jla-chon.local` in your browser
 
 ## Project Description
 
